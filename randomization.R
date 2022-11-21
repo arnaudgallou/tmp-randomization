@@ -70,7 +70,7 @@
         tbl_dist_log <- mutate(tbl_dist, distance = log(distance))
 
         out_gam <- gam(
-          sorensen_index ~ thermal_band + s(distance, sp = 10 k = 6, by = thermal_band),
+          sorensen_index ~ thermal_band + s(distance, sp = 10, k = 6, by = thermal_band),
           data = tbl_dist_log,
           method = "REML"
         )
