@@ -29,6 +29,7 @@
           # facet_wrap(vars(thermal_band)) +
           # geom_point(size = .1, alpha = .1) +
           geom_smooth(method = "lm", formula = y ~ x, se = FALSE) +
+          scale_color_brewer(palette = "RdBu", direction = -1) +
           guides(color = guide_legend(reverse = TRUE)) +
           theme_classic()
       }
@@ -54,13 +55,9 @@
       out_lm_inter <- lm(sorensen_index ~ distance * thermal_band, data = data)
 
       list(
-        r2 = summary(out_lm) %>% pluck("r.squared"),
-        r2_interaction = summary(out_lm_inter) %>% pluck("r.squared")
+        r2 = summary(out_lm)$r.squared,
+        r2_interaction = summary(out_lm_inter)$r.squared
       )
-
-      # gam <- gam(sorensen_index ~ thermal_band + s(distance, k = 1), data = data)
-      # pred_gam <- tidymv::predict_gam(mdl)
-      # summary(gam)
     }, .id = "iteration")
   }
 
@@ -70,8 +67,20 @@
       {
         library(mgcv)
 
-        out_gam <- gam(sorensen_index ~ thermal_band + s(distance, k = 1), data = tbl_dist)
+        tbl_dist_log <- mutate(tbl_dist, distance = log(distance))
+
+        out_gam <- gam(
+          sorensen_index ~ thermal_band + s(distance, sp = 10 k = 6, by = thermal_band),
+          data = tbl_dist_log,
+          method = "REML"
+        )
+      }
+
+    # · Diagnostics ----
+      {
         summary(out_gam)
+        gam.check(out_gam)
+        concurvity(out_gam)
       }
 
     # · Predictions ----
@@ -97,6 +106,7 @@
         pred %>%
           ggplot(aes(distance, fit, fill = thermal_band)) +
           tidymv::geom_smooth_ci(thermal_band) +
+          facet_wrap(vars(thermal_band)) +
           guides(
             linetype = guide_legend(reverse = TRUE),
             color = guide_legend(reverse = TRUE),
